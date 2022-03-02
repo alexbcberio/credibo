@@ -7,7 +7,7 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node -r dotenv/config dist/index.js",
     "watch": "concurrently -r true \"yarn build:dev\" \"yarn start:dev\"",
-    "start:dev": "cross-env NODE_ENV=development nodemon -r dotenv/config -r source-map-support/register --watch dist dist/index.js",
+    "start:dev": "cross-env NODE_ENV=development DEBUG=*,-nodemon* nodemon -r dotenv/config -r source-map-support/register --watch dist dist/index.js",
     "build": "yarn lint && rimraf dist && tsc",
     "build:dev": "tsc -w",
     "lint": "eslint src/**/*",
@@ -15,9 +15,11 @@
   },
   "dependencies": {
     "cross-env": "^7.0.3",
+    "debug": "^4.3.3",
     "dotenv": "^16.0.0"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.7",
     "@types/node": "^16.0.0",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.13.0",
