@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "start": "cross-env NODE_ENV=production node -r dotenv/config dist/index.js",
-    "watch": "concurrently -r true \"yarn build:dev\" \"yarn start:dev\"",
+    "watch": "tsc && concurrently -r true \"yarn build:dev\" \"yarn start:dev\"",
     "start:dev": "cross-env NODE_ENV=development DEBUG=*,-nodemon* nodemon -r dotenv/config -r source-map-support/register --watch dist dist/index.js",
     "build": "yarn lint && rimraf dist && tsc",
     "build:dev": "tsc -w",
