@@ -15,6 +15,7 @@
     "prettier"
   ],
   "rules": {
+    "no-console": ["error"],
     "no-promise-executor-return": ["error"],
     "no-template-curly-in-string": ["error"],
     "require-atomic-updates": ["error"],
