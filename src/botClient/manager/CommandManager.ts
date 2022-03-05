@@ -77,7 +77,7 @@ class CommandManager extends Base {
     await this.fetchCommands();
   }
 
-  public hasCommand(
+  public hasSlashCommand(
     command: string | SlashCommandBuilder,
     guildId?: string
   ): boolean {
@@ -97,10 +97,11 @@ class CommandManager extends Base {
     return false;
   }
 
-  public async addCommand(command: SlashCommandBuilder, guildId?: string) {
+  // TODO: add multiple commands at onces
+  public async addSlashCommand(command: SlashCommandBuilder, guildId?: string) {
     const name = command.name;
 
-    if (this.hasCommand(name, guildId)) {
+    if (this.hasSlashCommand(name, guildId)) {
       throw new Error(
         `The command ${name} is already registered, did you mean updateCommand()?`
       );
@@ -121,8 +122,9 @@ class CommandManager extends Base {
     );
   }
 
-  public async deleteCommand(name: string, guildId?: string) {
-    if (!this.hasCommand(name, guildId)) {
+  // TODO: delete multiple commands at onces
+  public async deleteSlashCommand(name: string, guildId?: string) {
+    if (!this.hasSlashCommand(name, guildId)) {
       throw new Error(`The command ${name} is not registered.`);
     }
 
@@ -147,10 +149,14 @@ class CommandManager extends Base {
     );
   }
 
-  public async updateCommand(command: SlashCommandBuilder, guildId?: string) {
+  // TODO: update multiple commands at onces
+  public async updateSlashCommand(
+    command: SlashCommandBuilder,
+    guildId?: string
+  ) {
     const name = command.name;
 
-    if (!this.hasCommand(name, guildId)) {
+    if (!this.hasSlashCommand(name, guildId)) {
       throw new Error(
         `The command ${name} is not registered, did you mean addCommand()?`
       );
@@ -206,6 +212,7 @@ class CommandManager extends Base {
     }
   }
 
+  // TODO: change command to Array<...>
   private async registerCommands(
     command: Array<SlashCommandBuilder> | SlashCommandBuilder,
     guildId?: string
@@ -238,6 +245,7 @@ class CommandManager extends Base {
     return createdCommands;
   }
 
+  // TODO: change commandId to Array<...>
   private async deleteCommands(
     commandId: Array<string> | string,
     guildId?: string
@@ -273,6 +281,7 @@ class CommandManager extends Base {
     return deletedCommands;
   }
 
+  // TODO: change command to Array<...>
   private async updateCommands(
     command: Array<SlashCommandBuilder> | SlashCommandBuilder,
     guildId?: string
