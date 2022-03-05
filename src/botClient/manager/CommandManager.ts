@@ -84,17 +84,14 @@ class CommandManager extends Base {
     const name =
       command instanceof SlashCommandBuilder ? command.name : command;
 
-    for (const command of this.commands.values()) {
-      if (
-        command.type === ApplicationCommandType.CHAT_INPUT &&
-        command.name === name &&
-        (typeof guildId === "undefined" || command.guildId === guildId)
-      ) {
-        return true;
-      }
-    }
+    const found = this.commands.findKey(
+      (c) =>
+        c.type === ApplicationCommandType.CHAT_INPUT &&
+        c.name === name &&
+        c.guildId === guildId
+    );
 
-    return false;
+    return typeof found !== "undefined";
   }
 
   public async addSlashCommand(
