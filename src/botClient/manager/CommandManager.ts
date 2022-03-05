@@ -49,13 +49,13 @@ class CommandManager extends Base {
 
   private get appId() {
     if (!this._appId) {
-      const { client } = this.client;
+      const { discord } = this.client;
 
-      if (!client.application) {
+      if (!discord.application) {
         throw new Error("Client application is not yet initialized");
       }
 
-      this._appId = client.application.id;
+      this._appId = discord.application.id;
     }
 
     return this._appId;
@@ -184,7 +184,7 @@ class CommandManager extends Base {
     }
 
     if (!guildId) {
-      const guilds = await this.client.client.guilds.fetch();
+      const guilds = await this.client.discord.guilds.fetch();
       const guildCommands = new Array<Promise<void>>();
 
       for (const guildId of guilds.keys()) {

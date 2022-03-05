@@ -53,7 +53,7 @@ class EventManager extends Base {
     event: Exclude<S, ClientEventTypes>,
     listener: Listener
   ): this {
-    this.client.client.once(event, listener);
+    this.client.discord.once(event, listener);
 
     return this;
   }
@@ -85,7 +85,7 @@ class EventManager extends Base {
 
   private registerListener(eventName: ClientEventTypes, listener: Listener) {
     this.listeners.set(eventName, listener);
-    this.client.client.on(eventName, listener);
+    this.client.discord.on(eventName, listener);
 
     this.log("Registered %s listener", eventName);
   }
@@ -97,7 +97,7 @@ class EventManager extends Base {
       throw new Error(`Could not find ${eventName} listener to unregister.`);
     }
 
-    this.client.client.off(eventName, listener);
+    this.client.discord.off(eventName, listener);
     this.listeners.delete(eventName);
 
     this.log("Unregistered %s listener", eventName);
