@@ -126,14 +126,13 @@ class EventManager extends Base {
 
     const promises = new Array<Promise<void>>();
 
+    const arg1 = args.shift();
+    const arg2 = args.shift();
+    const arg3 = args.shift();
+
     for (const listener of listeners) {
       // events have at most 3 arguments
-      const handler = listener.call(
-        this.client,
-        args.shift(),
-        args.shift(),
-        args.shift()
-      );
+      const handler = listener.call(this.client, arg1, arg2, arg3);
 
       promises.push(handler);
     }
