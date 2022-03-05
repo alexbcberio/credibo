@@ -1,3 +1,5 @@
+import * as helper from "./helper";
+
 import { Client, ClientOptions } from "discord.js";
 import { CommandManager, EventManager, ModuleManager } from "./manager";
 
@@ -9,6 +11,7 @@ class BotClient {
   public readonly commands: CommandManager;
   public readonly events: EventManager;
   public readonly modules: ModuleManager;
+  public readonly helper = helper;
 
   constructor(options: ClientOptions) {
     this.log = debug(this.constructor.name);
