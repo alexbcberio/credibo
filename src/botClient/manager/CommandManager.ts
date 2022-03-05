@@ -65,6 +65,12 @@ class CommandManager extends Base {
     return this._appId;
   }
 
+  private async firstGuildId() {
+    const guilds = await this.client.discord.guilds.fetch();
+
+    return guilds.firstKey();
+  }
+
   public async setToken(token: string) {
     this.rest.setToken(token);
 
@@ -205,6 +211,13 @@ class CommandManager extends Base {
     guildId?: string
   ): Promise<Array<ApplicationCommand>> {
     const commands = Array.isArray(command) ? command : [command];
+
+    if (this.client.helper.isDevelopment) {
+      guildId = await this.firstGuildId();
+
+      this.log("Forcing guildId %d for creation", guildId);
+    }
+
     const route =
       typeof guildId === "undefined"
         ? Routes.applicationCommands(this.appId)
@@ -235,6 +248,13 @@ class CommandManager extends Base {
 
     for (let i = 0; i < commandIds.length; i++) {
       const commandId = commandIds[i];
+
+      if (this.client.helper.isDevelopment) {
+        guildId = await this.firstGuildId();
+
+        this.log("Forcing guildId %d for deletion", guildId);
+      }
+
       const route =
         typeof guildId === "undefined"
           ? Routes.applicationCommand(this.appId, commandId)
