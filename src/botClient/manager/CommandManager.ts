@@ -8,6 +8,7 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 
 const restVersion = "10";
 
+// TODO: add support to manage "user" and "message" commands
 class CommandManager extends Base {
   private static parseRawApplicationCommand(raw: unknown): ApplicationCommand {
     if (raw !== null && typeof raw !== "object") {
@@ -42,6 +43,9 @@ class CommandManager extends Base {
 
     return command;
   }
+
+  // eslint-disable-next-line no-use-before-define
+  public ["constructor"]: typeof CommandManager;
 
   private _appId = "";
   private rest = new REST({ version: restVersion });
@@ -177,7 +181,7 @@ class CommandManager extends Base {
 
     if (Array.isArray(res)) {
       for (let i = 0; i < res.length; i++) {
-        const command = CommandManager.parseRawApplicationCommand(res[i]);
+        const command = this.constructor.parseRawApplicationCommand(res[i]);
 
         this.commands.set(command.id, command);
       }
@@ -206,20 +210,16 @@ class CommandManager extends Base {
         ? Routes.applicationCommands(this.appId)
         : Routes.applicationGuildCommands(this.appId, guildId);
 
-    const res = await this.rest.put(route, {
-      body: commands,
-    });
-
     const createdCommands = new Array<ApplicationCommand>();
 
-    if (Array.isArray(res)) {
-      for (let i = 0; i < res.length; i++) {
-        const command = res[i];
+    for (let i = 0; i < commands.length; i++) {
+      const createdCommand = await this.rest.post(route, {
+        body: commands[i],
+      });
 
-        createdCommands.push(
-          CommandManager.parseRawApplicationCommand(command)
-        );
-      }
+      createdCommands.push(
+        this.constructor.parseRawApplicationCommand(createdCommand)
+      );
     }
 
     return createdCommands;
