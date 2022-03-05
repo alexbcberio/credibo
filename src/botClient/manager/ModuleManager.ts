@@ -22,7 +22,7 @@ class ModuleManager extends Base {
   private modules = new Collection<string, Module>();
 
   public async registerModules(path: string) {
-    this.log('Registering from "%s"', path);
+    this.log('Registering modules from "%s"', path);
 
     const modules = await this.constructor.directoriesOnPath(path);
 
@@ -34,7 +34,7 @@ class ModuleManager extends Base {
   }
 
   public async unregisterModule(name: string) {
-    this.log('Unregistering "%s"', name);
+    this.log('Unregistering "%s" module', name);
 
     const module = this.modules.get(name);
 
@@ -57,10 +57,10 @@ class ModuleManager extends Base {
       // TODO: this might require a different handling
       // Its now though as if the same module was trying to be registered multiple
       // times as its shared as a submodule by different modules.
-      this.log('Skip registration of "%s", already registered', name);
+      this.log('Skip registration of "%s" module, already registered', name);
       return;
     } else if (module.disabled) {
-      this.log('Skip registration of "%s", its disabled', name);
+      this.log('Skip registration of "%s" module, its disabled', name);
       return;
     }
 
@@ -73,7 +73,7 @@ class ModuleManager extends Base {
     }
 
     await module.initialize(this.client);
-    this.log('Registered "%s"', name);
+    this.log('Registered "%s" module', name);
   }
 
   private async registerSubmodules(modules: Array<Module>) {
