@@ -39,7 +39,7 @@ class ModuleManager extends Base {
     const module = this.modules.get(name);
 
     if (!module) {
-      throw new Error(`Module "${name}" is not registered`);
+      throw new Error(`Module "${name}" is not registered.`);
     }
 
     await module.destroy();

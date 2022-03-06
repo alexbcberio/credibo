@@ -60,7 +60,7 @@ class CommandManager extends Base {
       const { discord } = this.client;
 
       if (!discord.application) {
-        throw new Error("Client application is not yet initialized");
+        throw new Error("Client application is not yet initialized.");
       }
 
       this._appId = discord.application.id;
@@ -281,7 +281,7 @@ class CommandManager extends Base {
 
   public async addMessageCommand(name: string, guildId?: string) {
     if (this.hasMessageCommand(name, guildId)) {
-      throw new Error(`The message command ${name} is already registered`);
+      throw new Error(`The message command ${name} is already registered.`);
     }
 
     const messageCommand: MessageCommand = {

@@ -13,7 +13,7 @@ class PluginManager extends Base {
     const { name } = plugin;
 
     if (this.hasPlugin(name)) {
-      throw new Error(`Plugin ${name} is already registered`);
+      throw new Error(`Plugin ${name} is already registered.`);
     }
 
     await plugin.initialize(this.client);
@@ -26,7 +26,7 @@ class PluginManager extends Base {
     const plugin = this.plugins.get(name);
 
     if (!plugin) {
-      throw new Error(`Plugin ${name} is not registered`);
+      throw new Error(`Plugin ${name} is not registered.`);
     }
 
     await plugin.destroy();
@@ -39,7 +39,7 @@ class PluginManager extends Base {
     const plugin = this.plugins.get(name);
 
     if (!plugin) {
-      throw new Error(`Plugin ${name} is not registered`);
+      throw new Error(`Plugin ${name} is not registered.`);
     }
 
     return plugin;
