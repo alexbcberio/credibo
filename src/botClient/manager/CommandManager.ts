@@ -158,7 +158,7 @@ class CommandManager extends Base {
       commandsId.push(commandId);
     }
 
-    const commands = await this.deleteCommands(commandsId, guildId);
+    const commands = await this.deleteCommands(commandsId);
 
     for (let i = 0; i < commands.length; i++) {
       this.commands.delete(commands[i].id);
@@ -255,7 +255,7 @@ class CommandManager extends Base {
       throw new Error(`The user command ${name} is not registered.`);
     }
 
-    const command = await this.deleteCommands([commandId], guildId);
+    const command = await this.deleteCommands([commandId]);
 
     for (let i = 0; i < command.length; i++) {
       this.commands.delete(command[i].id);
@@ -319,7 +319,7 @@ class CommandManager extends Base {
       throw new Error(`The message command ${name} is not registered.`);
     }
 
-    const command = await this.deleteCommands([commandId], guildId);
+    const command = await this.deleteCommands([commandId]);
 
     for (let i = 0; i < command.length; i++) {
       this.commands.delete(command[i].id);
@@ -427,8 +427,7 @@ class CommandManager extends Base {
   }
 
   private async deleteCommands(
-    commandId: Array<string>,
-    guildId?: string
+    commandId: Array<string>
   ): Promise<Array<ApplicationCommand>> {
     const commandIds = Array.isArray(commandId) ? commandId : [commandId];
 
@@ -436,24 +435,20 @@ class CommandManager extends Base {
 
     for (let i = 0; i < commandIds.length; i++) {
       const commandId = commandIds[i];
+      const command = this.commands.get(commandId);
 
-      if (this.client.helper.isDevelopment) {
-        guildId = await this.firstGuildId();
-
-        this.log("Forcing guildId %d for command deletion", guildId);
+      if (!command) {
+        throw new Error(`Command ${commandId} could not be found.`);
       }
+
+      const { id, guildId } = command;
 
       const route =
         typeof guildId === "undefined"
-          ? Routes.applicationCommand(this.appId, commandId)
-          : Routes.applicationGuildCommand(this.appId, guildId, commandId);
+          ? Routes.applicationCommand(this.appId, id)
+          : Routes.applicationGuildCommand(this.appId, guildId, id);
 
       await this.rest.delete(route);
-
-      const command = this.commands.get(commandId);
-      if (!command) {
-        throw new Error("Command could not be found.");
-      }
 
       deletedCommands.push(command);
     }
