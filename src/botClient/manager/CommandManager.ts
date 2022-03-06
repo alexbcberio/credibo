@@ -376,7 +376,7 @@ class CommandManager extends Base {
     if (this.client.helper.isDevelopment) {
       guildId = await this.firstGuildId();
 
-      this.log("Forcing guildId %d for creation", guildId);
+      this.log("Forcing guildId %d for command creation", guildId);
     }
 
     const route =
@@ -413,7 +413,7 @@ class CommandManager extends Base {
       if (this.client.helper.isDevelopment) {
         guildId = await this.firstGuildId();
 
-        this.log("Forcing guildId %d for deletion", guildId);
+        this.log("Forcing guildId %d for command deletion", guildId);
       }
 
       const route =
