@@ -1,13 +1,9 @@
-import { BotClient } from "..";
+import { Plugin } from "./Plugin";
 
-interface Module {
+interface Module extends Plugin {
   disabled?: boolean;
-  name: string;
-  version: `${number}.${number}.${number}`;
   description?: string;
   modules?: Array<Module>;
-  initialize(client: BotClient): Promise<void>;
-  destroy(): Promise<void>;
 }
 
 export { Module };
