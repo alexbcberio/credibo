@@ -332,6 +332,33 @@ class CommandManager extends Base {
     );
   }
 
+  public async deleteAllCommands(guildId?: string) {
+    const route =
+      typeof guildId === "undefined"
+        ? Routes.applicationCommands(this.appId)
+        : Routes.applicationGuildCommands(this.appId, guildId);
+
+    await this.rest.put(route, {
+      body: [],
+    });
+
+    let numDeletedCommands = 0;
+
+    for (const command of this.commands.values()) {
+      if (command.guildId === guildId) {
+        this.commands.delete(command.id);
+        numDeletedCommands++;
+      }
+    }
+
+    this.log(
+      `Deleted all (%d) ${
+        typeof guildId === "undefined" ? "global " : "guild "
+      }commands`,
+      numDeletedCommands
+    );
+  }
+
   private async fetchCommands(guildId?: string) {
     const route =
       typeof guildId === "undefined"
