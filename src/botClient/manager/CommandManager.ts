@@ -1,6 +1,7 @@
 import {
   ApplicationCommand,
   ApplicationCommandType,
+  MessageCommand,
   UserCommand,
 } from "../types";
 
@@ -12,7 +13,6 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 
 const restVersion = "10";
 
-// TODO: add support to manage "user" and "message" commands
 class CommandManager extends Base {
   private static parseRawApplicationCommand(raw: unknown): ApplicationCommand {
     if (raw !== null && typeof raw !== "object") {
@@ -217,9 +217,7 @@ class CommandManager extends Base {
 
   public async addUserCommand(name: string, guildId?: string) {
     if (this.hasUserCommand(name, guildId)) {
-      throw new Error(
-        `The user command ${name} is already registered, did you mean updateUserCommand()?`
-      );
+      throw new Error(`The user command ${name} is already registered.`);
     }
 
     const userCommand: UserCommand = {
@@ -270,6 +268,70 @@ class CommandManager extends Base {
     );
   }
 
+  public hasMessageCommand(name: string, guildId?: string) {
+    const found = this.commands.findKey(
+      (c) =>
+        c.type === ApplicationCommandType.MESSAGE &&
+        c.name === name &&
+        c.guildId === guildId
+    );
+
+    return typeof found !== "undefined";
+  }
+
+  public async addMessageCommand(name: string, guildId?: string) {
+    if (this.hasMessageCommand(name, guildId)) {
+      throw new Error(`The message command ${name} is already registered`);
+    }
+
+    const messageCommand: MessageCommand = {
+      type: ApplicationCommandType.MESSAGE,
+      name,
+    };
+
+    const registeredCommands = await this.registerCommands(
+      [messageCommand],
+      guildId
+    );
+
+    for (let i = 0; i < registeredCommands.length; i++) {
+      const registeredCommand = registeredCommands[i];
+
+      this.commands.set(registeredCommand.id, registeredCommand);
+    }
+
+    this.log(
+      "Registered %d message commands %o",
+      registeredCommands.length,
+      registeredCommands.map((c) => c.name)
+    );
+  }
+
+  public async deleteMessageCommand(name: string, guildId?: string) {
+    const commandId = this.commands.findKey(
+      (c) =>
+        c.type === ApplicationCommandType.MESSAGE &&
+        c.name === name &&
+        c.guildId === guildId
+    );
+
+    if (!commandId) {
+      throw new Error(`The message command ${name} is not registered.`);
+    }
+
+    const command = await this.deleteCommands([commandId], guildId);
+
+    for (let i = 0; i < command.length; i++) {
+      this.commands.delete(command[i].id);
+    }
+
+    this.log(
+      "Deleted %d message commands: %o",
+      command.length,
+      command.map((c) => c.name)
+    );
+  }
+
   private async fetchCommands(guildId?: string) {
     const route =
       typeof guildId === "undefined"
@@ -306,7 +368,7 @@ class CommandManager extends Base {
   }
 
   private async registerCommands(
-    command: Array<SlashCommandBuilder | UserCommand>,
+    command: Array<SlashCommandBuilder | UserCommand | MessageCommand>,
     guildId?: string
   ): Promise<Array<ApplicationCommand>> {
     const commands = Array.isArray(command) ? command : [command];
@@ -373,7 +435,7 @@ class CommandManager extends Base {
   }
 
   private async updateCommands(
-    command: Array<SlashCommandBuilder | UserCommand>,
+    command: Array<SlashCommandBuilder | UserCommand | MessageCommand>,
     guildId?: string
   ): Promise<Array<ApplicationCommand>> {
     const updatedCommands = await this.registerCommands(command, guildId);
