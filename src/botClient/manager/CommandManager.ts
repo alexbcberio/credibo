@@ -1,4 +1,8 @@
-import { ApplicationCommand, ApplicationCommandType } from "../types";
+import {
+  ApplicationCommand,
+  ApplicationCommandType,
+  UserCommand,
+} from "../types";
 
 import { Base } from "../Base";
 import { Collection } from "discord.js";
@@ -107,7 +111,7 @@ class CommandManager extends Base {
 
       if (this.hasSlashCommand(name, guildId)) {
         throw new Error(
-          `The command ${name} is already registered, did you mean updateCommand()?`
+          `The slash command ${name} is already registered, did you mean updateSlashCommand()?`
         );
       }
     }
@@ -121,7 +125,7 @@ class CommandManager extends Base {
     }
 
     this.log(
-      "Registered %d commands %o",
+      "Registered %d slash commands %o",
       registeredCommands.length,
       registeredCommands.map((c) => c.name)
     );
@@ -141,11 +145,14 @@ class CommandManager extends Base {
       const name = names[i];
 
       const commandId = this.commands.findKey(
-        (c) => c.name === name && c.guildId === guildId
+        (c) =>
+          c.type === ApplicationCommandType.CHAT_INPUT &&
+          c.name === name &&
+          c.guildId === guildId
       );
 
       if (!commandId) {
-        throw new Error(`The command ${name} is not registered.`);
+        throw new Error(`The slash command ${name} is not registered.`);
       }
 
       commandsId.push(commandId);
@@ -158,7 +165,7 @@ class CommandManager extends Base {
     }
 
     this.log(
-      "Deleted %d commands: %o",
+      "Deleted %d slash commands: %o",
       commands.length,
       commands.map((c) => c.name)
     );
@@ -177,7 +184,7 @@ class CommandManager extends Base {
 
       if (!this.hasSlashCommand(name, guildId)) {
         throw new Error(
-          `The command ${name} is not registered, did you mean addCommand()?`
+          `The slash command ${name} is not registered, did you mean addSlashCommand()?`
         );
       }
     }
@@ -191,9 +198,75 @@ class CommandManager extends Base {
     }
 
     this.log(
-      "Updated %d commands: %o",
+      "Updated %d slash commands: %o",
       updatedCommands.length,
       updatedCommands.map((c) => c.name)
+    );
+  }
+
+  public hasUserCommand(name: string, guildId?: string) {
+    const found = this.commands.findKey(
+      (c) =>
+        c.type === ApplicationCommandType.USER &&
+        c.name === name &&
+        c.guildId === guildId
+    );
+
+    return typeof found !== "undefined";
+  }
+
+  public async addUserCommand(name: string, guildId?: string) {
+    if (this.hasUserCommand(name, guildId)) {
+      throw new Error(
+        `The user command ${name} is already registered, did you mean updateUserCommand()?`
+      );
+    }
+
+    const userCommand: UserCommand = {
+      type: ApplicationCommandType.USER,
+      name,
+    };
+
+    const registeredCommands = await this.registerCommands(
+      [userCommand],
+      guildId
+    );
+
+    for (let i = 0; i < registeredCommands.length; i++) {
+      const registeredCommand = registeredCommands[i];
+
+      this.commands.set(registeredCommand.id, registeredCommand);
+    }
+
+    this.log(
+      "Registered %d user commands %o",
+      registeredCommands.length,
+      registeredCommands.map((c) => c.name)
+    );
+  }
+
+  public async deleteUserCommand(name: string, guildId?: string) {
+    const commandId = this.commands.findKey(
+      (c) =>
+        c.type === ApplicationCommandType.USER &&
+        c.name === name &&
+        c.guildId === guildId
+    );
+
+    if (!commandId) {
+      throw new Error(`The user command ${name} is not registered.`);
+    }
+
+    const command = await this.deleteCommands([commandId], guildId);
+
+    for (let i = 0; i < command.length; i++) {
+      this.commands.delete(command[i].id);
+    }
+
+    this.log(
+      "Deleted %d user commands: %o",
+      command.length,
+      command.map((c) => c.name)
     );
   }
 
@@ -233,7 +306,7 @@ class CommandManager extends Base {
   }
 
   private async registerCommands(
-    command: Array<SlashCommandBuilder>,
+    command: Array<SlashCommandBuilder | UserCommand>,
     guildId?: string
   ): Promise<Array<ApplicationCommand>> {
     const commands = Array.isArray(command) ? command : [command];
@@ -300,7 +373,7 @@ class CommandManager extends Base {
   }
 
   private async updateCommands(
-    command: Array<SlashCommandBuilder>,
+    command: Array<SlashCommandBuilder | UserCommand>,
     guildId?: string
   ): Promise<Array<ApplicationCommand>> {
     const updatedCommands = await this.registerCommands(command, guildId);
