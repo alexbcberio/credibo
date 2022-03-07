@@ -1,7 +1,9 @@
 import { BotClient } from "..";
 
 abstract class Plugin {
-  public abstract readonly name: string;
+  public readonly name =
+    this.constructor.name.charAt(0).toLowerCase() +
+    this.constructor.name.substring(1);
   public abstract readonly version: `${number}.${number}.${number}`;
 
   protected readonly client: BotClient;
