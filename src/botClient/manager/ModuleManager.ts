@@ -51,7 +51,9 @@ class ModuleManager extends Base {
   }
 
   private async registerModule(module: Module) {
-    const { name, modules } = module;
+    // @ts-expect-error Module is abstract, users are supposed to extend it
+    const instance: Module = new module(this.client);
+    const { name, modules } = instance;
 
     if (this.hasModule(name)) {
       // TODO: this might require a different handling
@@ -64,15 +66,16 @@ class ModuleManager extends Base {
       return;
     }
 
-    this.modules.set(name, module);
+    this.modules.set(name, instance);
 
-    if (modules) {
+    if (modules.length) {
       this.log('"%s" has submodules, registering its submodules');
 
       await this.registerSubmodules(modules);
     }
 
-    await module.initialize(this.client);
+    await instance.initialize();
+
     this.log('Registered "%s" module', name);
   }
 
