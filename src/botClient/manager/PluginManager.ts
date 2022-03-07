@@ -9,7 +9,7 @@ class PluginManager extends Base {
     return this.plugins.has(name);
   }
 
-  public async addPlugin(plugin: Plugin) {
+  public async addPlugin(plugin: typeof Plugin) {
     // @ts-expect-error Plugin is abstract, users are supposed to extend it
     const instance: Plugin = new plugin(this.client);
     const { name } = instance;
@@ -20,7 +20,7 @@ class PluginManager extends Base {
 
     await instance.initialize();
 
-    this.plugins.set(name, plugin);
+    this.plugins.set(name, instance);
     this.log("Added %s plugin", name);
   }
 
