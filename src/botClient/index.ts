@@ -7,8 +7,7 @@ import {
   ModuleManager,
   PluginManager,
 } from "./manager";
-
-import debug from "debug";
+import debug, { Debugger } from "debug";
 
 class BotClient {
   public static create(options: ClientOptions): BotClient {
@@ -37,7 +36,7 @@ class BotClient {
     return instanceProxy;
   }
 
-  public readonly log: debug.Debugger;
+  public readonly log: Debugger;
   public readonly discord: Client;
   public readonly helper = helper;
 

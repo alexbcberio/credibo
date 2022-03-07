@@ -1,10 +1,9 @@
-import debug = require("debug");
-
 import { BotClient } from ".";
+import { Debugger } from "debug";
 
 abstract class Base {
   public readonly client: BotClient;
-  protected readonly log: debug.Debugger;
+  protected readonly log: Debugger;
 
   constructor(client: BotClient) {
     this.client = client;
