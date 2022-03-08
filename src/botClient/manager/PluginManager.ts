@@ -9,18 +9,16 @@ class PluginManager extends Base {
     return this.plugins.has(name);
   }
 
-  public async addPlugin(plugin: typeof Plugin) {
-    // @ts-expect-error Plugin is abstract, users are supposed to extend it
-    const instance: Plugin = new plugin(this.client);
-    const { name } = instance;
+  public async addPlugin(plugin: Plugin) {
+    const { name } = plugin;
 
     if (this.hasPlugin(name)) {
       throw new Error(`Plugin ${name} is already registered.`);
     }
 
-    await instance.initialize();
+    await plugin.initialize();
 
-    this.plugins.set(name, instance);
+    this.plugins.set(name, plugin);
     this.log("Added %s plugin", name);
   }
 
