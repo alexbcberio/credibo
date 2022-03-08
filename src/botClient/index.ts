@@ -10,30 +10,8 @@ import {
 import debug, { Debugger } from "debug";
 
 class BotClient {
-  public static create(options: ClientOptions): BotClient {
-    const instance = new this(options);
-
-    const instanceProxy = new Proxy(instance, {
-      get(target: BotClient, handler: string | symbol) {
-        // TODO: find a better way to avoid @ts-expect-error
-        // @ts-expect-error cannot index target
-        const targetHandler = target[handler];
-
-        if (targetHandler) {
-          return targetHandler;
-        } else if (
-          typeof handler === "string" &&
-          target.plugins.hasPlugin(handler)
-        ) {
-          return target.plugins.getPlugin(handler);
-        }
-
-        // eslint-disable-next-line no-undefined
-        return undefined;
-      },
-    });
-
-    return instanceProxy;
+  public static createInstance(options: ClientOptions): BotClient {
+    return new this(options);
   }
 
   public readonly log: Debugger;
