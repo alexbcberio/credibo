@@ -1,19 +1,15 @@
-import { ClientEvents, Collection } from "discord.js";
-
 import { Base } from "../Base";
 import { BotClient } from "..";
+import { ClientEvents } from "discord.js";
 
 type ClientEventTypes = keyof ClientEvents;
-type Listener = (this: BotClient, ...args: Array<unknown>) => Promise<void>;
+type Listener = (...args: Array<unknown>) => void;
 
 class EventManager extends Base {
-  private readonly events = new Collection<ClientEventTypes, Set<Listener>>();
-  private readonly listeners = new Collection<ClientEventTypes, Listener>();
-
   // heavily copy pasted from discord.js
   public on<K extends ClientEventTypes>(
     event: K,
-    listener: (this: BotClient, ...args: ClientEvents[K]) => Promise<void>
+    listener: (this: BotClient, ...args: ClientEvents[K]) => void
   ): this;
 
   // heavily copy pasted from discord.js
@@ -23,21 +19,13 @@ class EventManager extends Base {
   ): this {
     const eventName = event as ClientEventTypes;
 
-    let eventSet = this.events.get(eventName);
-
-    if (!eventSet) {
-      eventSet = new Set<Listener>();
-      this.events.set(eventName, eventSet);
-    }
-
-    if (!eventSet.size) {
+    if (!this.listenerCount(event)) {
       const eventListener = (...args: Array<unknown>) =>
         this.handleEvent(eventName, args);
-
       this.registerListener(eventName, eventListener);
     }
 
-    eventSet.add(listener);
+    super.on(event, listener);
 
     return this;
   }
@@ -45,7 +33,7 @@ class EventManager extends Base {
   // heavily copy pasted from discord.js
   public once<K extends ClientEventTypes>(
     event: K,
-    listener: (...args: ClientEvents[K]) => Promise<void>
+    listener: (...args: ClientEvents[K]) => void
   ): this;
 
   // heavily copy pasted from discord.js
@@ -61,83 +49,51 @@ class EventManager extends Base {
   // heavily copy pasted from discord.js
   public off<K extends ClientEventTypes>(
     event: K,
-    listener: (...args: ClientEvents[K]) => Promise<void>
-  ): void;
+    listener: (...args: ClientEvents[K]) => void
+  ): this;
 
   // heavily copy pasted from discord.js
   public off<S extends string | symbol>(
     event: Exclude<S, ClientEventTypes>,
     listener: Listener
-  ): void {
+  ): this {
     const eventName = event as ClientEventTypes;
-    const eventSet = this.events.get(eventName);
+    const rawListeners = this.rawListeners(eventName);
 
-    if (!eventSet) {
-      throw new Error(`There are no ${eventName} registered events.`);
-    }
-
-    eventSet.delete(listener);
-
-    if (!eventSet.size) {
+    // eslint-disable-next-line no-magic-numbers
+    if (rawListeners.length === 1 && rawListeners.pop() === listener) {
       this.unregisterListener(eventName);
     }
+
+    super.off(event, listener);
+
+    return this;
   }
 
   private registerListener(eventName: ClientEventTypes, listener: Listener) {
-    this.listeners.set(eventName, listener);
     this.client.discord.on(eventName, listener);
 
     this.log("Registered %s listener", eventName);
   }
 
   private unregisterListener(eventName: ClientEventTypes) {
-    const listener = this.listeners.get(eventName);
+    const listener = this.rawListeners(eventName).pop();
 
     if (!listener) {
       throw new Error(`Could not find ${eventName} listener to unregister.`);
     }
 
-    this.client.discord.off(eventName, listener);
-    this.listeners.delete(eventName);
+    this.client.discord.off(eventName, listener as Listener);
 
     this.log("Unregistered %s listener", eventName);
   }
 
-  private async processEventHandlerPromises(promises: Array<Promise<unknown>>) {
-    const result = await Promise.allSettled(promises);
-
-    const rejectedPromises = result.filter((p) => p.status === "rejected");
-
-    if (rejectedPromises.length) {
-      this.log(
-        "Rejected %d promises %O",
-        rejectedPromises.length,
-        rejectedPromises
-      );
-    }
-  }
-
-  private async handleEvent(event: ClientEventTypes, args: Array<unknown>) {
-    const listeners = this.events.get(event);
-
-    if (!listeners || !listeners.size) {
-      return;
-    }
-
-    const promises = new Array<Promise<void>>();
-
+  private handleEvent(event: ClientEventTypes, args: Array<unknown>) {
     const arg1 = args.shift();
     const arg2 = args.shift();
     const arg3 = args.shift();
 
-    for (const listener of listeners) {
-      // events have at most 3 arguments
-      const handler = listener.call(this.client, arg1, arg2, arg3);
-
-      promises.push(handler);
-    }
-
-    await this.processEventHandlerPromises(promises);
+    this.emit(event, arg1, arg2, arg3);
   }
 }
 
