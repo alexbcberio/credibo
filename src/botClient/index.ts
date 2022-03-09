@@ -31,6 +31,8 @@ class BotClient {
     this.events = new EventManager(this);
     this.modules = new ModuleManager(this);
     this.plugins = new PluginManager(this);
+
+    process.on("SIGINT", () => this.destroy());
   }
 
   public async login(token: string) {
@@ -38,6 +40,11 @@ class BotClient {
     await this.commands.setToken(token);
 
     return client;
+  }
+
+  private destroy() {
+    this.discord.destroy();
+    this.log("Client destroyed");
   }
 }
 
