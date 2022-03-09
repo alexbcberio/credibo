@@ -69,12 +69,6 @@ class CommandManager extends Base {
     return this._appId;
   }
 
-  private async firstGuildId() {
-    const guilds = await this.client.discord.guilds.fetch();
-
-    return guilds.firstKey();
-  }
-
   public async setToken(token: string) {
     this.rest.setToken(token);
 
@@ -392,6 +386,12 @@ class CommandManager extends Base {
       await Promise.all(guildCommands);
       this.log("Fetched %d commands", this.commands.size);
     }
+  }
+
+  private async firstGuildId() {
+    const guilds = await this.client.discord.guilds.fetch();
+
+    return guilds.firstKey();
   }
 
   private async registerCommands(
