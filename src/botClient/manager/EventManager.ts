@@ -17,13 +17,7 @@ class EventManager extends Base {
     event: Exclude<S, ClientEventTypes>,
     listener: Listener
   ): this {
-    const eventName = event as ClientEventTypes;
-
-    if (!this.listenerCount(event)) {
-      const eventListener = (...args: Array<unknown>) =>
-        this.handleEvent(eventName, args);
-      this.registerListener(eventName, eventListener);
-    }
+    this.registerListener(event as ClientEventTypes);
 
     super.on(event, listener);
 
@@ -58,10 +52,9 @@ class EventManager extends Base {
     listener: Listener
   ): this {
     const eventName = event as ClientEventTypes;
-    const rawListeners = this.rawListeners(eventName);
 
     // eslint-disable-next-line no-magic-numbers
-    if (rawListeners.length === 1 && rawListeners.pop() === listener) {
+    if (this.isOnlyListener(eventName, listener)) {
       this.unregisterListener(eventName);
     }
 
@@ -70,10 +63,22 @@ class EventManager extends Base {
     return this;
   }
 
-  private registerListener(eventName: ClientEventTypes, listener: Listener) {
-    this.client.discord.on(eventName, listener);
+  private isOnlyListener(event: ClientEventTypes, listener: Listener): boolean {
+    const rawListeners = this.rawListeners(event);
 
-    this.log("Registered %s listener", eventName);
+    // eslint-disable-next-line no-magic-numbers
+    return rawListeners.length === 1 && rawListeners.pop() === listener;
+  }
+
+  private registerListener(eventName: ClientEventTypes) {
+    if (!this.listenerCount(eventName)) {
+      const listener = (...args: Array<unknown>) =>
+        this.handleEvent(eventName, args);
+
+      this.client.discord.on(eventName, listener);
+
+      this.log("Registered %s listener", eventName);
+    }
   }
 
   private unregisterListener(eventName: ClientEventTypes) {
