@@ -1,11 +1,18 @@
+import { ClientEvents, Collection } from "discord.js";
+
 import { Base } from "../Base";
 import { BotClient } from "..";
-import { ClientEvents } from "discord.js";
 
 type ClientEventTypes = keyof ClientEvents;
 type Listener = (...args: Array<unknown>) => void;
 
 class EventManager extends Base {
+  private readonly preHooks = new Collection<ClientEventTypes, Set<Listener>>();
+  private readonly postHooks = new Collection<
+    ClientEventTypes,
+    Set<Listener>
+  >();
+
   // heavily copy pasted from discord.js
   public on<K extends ClientEventTypes>(
     event: K,
@@ -63,6 +70,56 @@ class EventManager extends Base {
     return this;
   }
 
+  // heavily copy pasted from discord.js
+  public pre<K extends ClientEventTypes>(
+    event: K,
+    listener: (this: BotClient, ...args: ClientEvents[K]) => void
+  ): this;
+
+  // heavily copy pasted from discord.js
+  public pre<S extends string | symbol>(
+    event: Exclude<S, ClientEventTypes>,
+    listener: Listener
+  ): this {
+    const eventName = event as ClientEventTypes;
+    let preHooks = this.preHooks.get(eventName);
+
+    if (!preHooks) {
+      preHooks = new Set<Listener>();
+
+      this.preHooks.set(eventName, preHooks);
+    }
+
+    preHooks.add(listener);
+
+    return this;
+  }
+
+  // heavily copy pasted from discord.js
+  public post<K extends ClientEventTypes>(
+    event: K,
+    listener: (this: BotClient, ...args: ClientEvents[K]) => void
+  ): this;
+
+  // heavily copy pasted from discord.js
+  public post<S extends string | symbol>(
+    event: Exclude<S, ClientEventTypes>,
+    listener: Listener
+  ): this {
+    const eventName = event as ClientEventTypes;
+    let postHooks = this.postHooks.get(eventName);
+
+    if (!postHooks) {
+      postHooks = new Set<Listener>();
+
+      this.postHooks.set(eventName, postHooks);
+    }
+
+    postHooks.add(listener);
+
+    return this;
+  }
+
   private isOnlyListener(event: ClientEventTypes, listener: Listener): boolean {
     const rawListeners = this.rawListeners(event);
 
@@ -98,7 +155,23 @@ class EventManager extends Base {
     const arg2 = args.shift();
     const arg3 = args.shift();
 
+    const preHooks = this.preHooks.get(event);
+
+    if (preHooks) {
+      for (const preHook of preHooks.values()) {
+        preHook(arg1, arg2, arg3);
+      }
+    }
+
     this.emit(event, arg1, arg2, arg3);
+
+    const postHooks = this.postHooks.get(event);
+
+    if (postHooks) {
+      for (const postHook of postHooks.values()) {
+        postHook(arg1, arg2, arg3);
+      }
+    }
   }
 }
 
