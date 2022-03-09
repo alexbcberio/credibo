@@ -14,13 +14,15 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 const restVersion = "10";
 
 class CommandManager extends Base {
-  private static parseRawApplicationCommand(raw: unknown): ApplicationCommand {
-    if (raw !== null && typeof raw !== "object") {
+  private static parseRawApplicationCommand(
+    rawCommand: unknown
+  ): ApplicationCommand {
+    if (rawCommand !== null && typeof rawCommand !== "object") {
       throw new Error("ApplicationCommand must be a object.");
     }
 
     const expectedKeys = ["id", "type", "application_id", "name", "version"];
-    const keys = Object.keys(raw as object);
+    const keys = Object.keys(rawCommand as object);
 
     for (let i = 0; i < expectedKeys.length; i++) {
       const expectedKey = expectedKeys[i];
@@ -31,7 +33,7 @@ class CommandManager extends Base {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rawApplicationCommand = raw as any;
+    const rawApplicationCommand = rawCommand as any;
 
     const command: ApplicationCommand = {
       id: rawApplicationCommand.id,
@@ -72,7 +74,7 @@ class CommandManager extends Base {
   public async setToken(token: string) {
     this.rest.setToken(token);
 
-    await this.fetchCommands();
+    await this.fetchAllCommands();
   }
 
   public hasSlashCommand(
@@ -353,38 +355,52 @@ class CommandManager extends Base {
     );
   }
 
-  private async fetchCommands(guildId?: string) {
-    const route =
-      typeof guildId === "undefined"
-        ? Routes.applicationCommands(this.appId)
-        : Routes.applicationGuildCommands(this.appId, guildId);
+  private async fetchAllCommands() {
+    await this.fetchApplicationCommands();
 
-    if (!guildId) {
-      this.log("Fetching application commands");
-    } else {
-      this.log("Fetching application guild commands (%d)", guildId);
+    const guilds = await this.client.discord.guilds.fetch();
+    const guildCommands = new Array<Promise<void>>();
+
+    for (const guildId of guilds.keys()) {
+      guildCommands.push(this.fetchGuildCommands(guildId));
     }
 
-    const res = await this.rest.get(route);
+    await Promise.all(guildCommands);
+    this.log("Fetched %d commands", this.commands.size);
+  }
 
-    if (Array.isArray(res)) {
-      for (let i = 0; i < res.length; i++) {
-        const command = this.constructor.parseRawApplicationCommand(res[i]);
+  private async fetchApplicationCommands() {
+    this.log("Fetching application commands");
+
+    const route = Routes.applicationCommands(this.appId);
+    const rawCommands = await this.rest.get(route);
+
+    if (Array.isArray(rawCommands)) {
+      for (let i = 0; i < rawCommands.length; i++) {
+        const command = this.constructor.parseRawApplicationCommand(
+          rawCommands[i]
+        );
 
         this.commands.set(command.id, command);
       }
     }
+  }
 
-    if (!guildId) {
-      const guilds = await this.client.discord.guilds.fetch();
-      const guildCommands = new Array<Promise<void>>();
+  private async fetchGuildCommands(guildId: string) {
+    this.log("Fetching application guild commands (%d)", guildId);
 
-      for (const guildId of guilds.keys()) {
-        guildCommands.push(this.fetchCommands(guildId));
+    const route = Routes.applicationGuildCommands(this.appId, guildId);
+    const rawCommands = await this.rest.get(route);
+    await this.fetchGuildCommandPermissions(guildId);
+
+    if (Array.isArray(rawCommands)) {
+      for (let i = 0; i < rawCommands.length; i++) {
+        const command = this.constructor.parseRawApplicationCommand(
+          rawCommands[i]
+        );
+
+        this.commands.set(command.id, command);
       }
-
-      await Promise.all(guildCommands);
-      this.log("Fetched %d commands", this.commands.size);
     }
   }
 
