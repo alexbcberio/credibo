@@ -94,6 +94,7 @@ class CommandManager extends Base {
   public ["constructor"]: typeof CommandManager;
 
   private _appId = "";
+  private developmentGuild?: string;
   private rest = new REST({ version: restVersion });
   private commands = new Collection<string, ApplicationCommand>();
   private commandPermissions = new Collection<string, GuildCommandPermission>();
@@ -118,24 +119,45 @@ class CommandManager extends Base {
     await this.fetchAllCommands();
   }
 
-  public hasSlashCommand(
+  public async getSlashCommand(
     command: string | SlashCommandBuilder,
     guildId?: string
-  ): boolean {
+  ) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for getSlashCommand", guildId);
+    }
+
     const name =
       command instanceof SlashCommandBuilder ? command.name : command;
 
-    const found = this.commands.findKey(
+    return this.commands.find(
       (c) =>
         c.type === ApplicationCommandType.CHAT_INPUT &&
         c.name === name &&
         c.guildId === guildId
     );
-
-    return typeof found !== "undefined";
   }
 
-  public async addSlashCommand(
+  public async hasSlashCommand(
+    command: string | SlashCommandBuilder,
+    guildId?: string
+  ): Promise<boolean> {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for hasSlashCommand", guildId);
+    }
+
+    const slashCommand = await this.getSlashCommand(command, guildId);
+
+    return typeof slashCommand !== "undefined";
+  }
+
+  public async addSlashCommands(
     commands: Array<SlashCommandBuilder> | SlashCommandBuilder,
     guildId?: string
   ) {
@@ -143,37 +165,47 @@ class CommandManager extends Base {
       commands = [commands];
     }
 
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for addSlashCommands", guildId);
+    }
+
     for (let i = 0; i < commands.length; i++) {
       const { name } = commands[i];
 
-      if (this.hasSlashCommand(name, guildId)) {
+      if (await this.hasSlashCommand(name, guildId)) {
         throw new Error(
           `The slash command ${name} is already registered, did you mean updateSlashCommand()?`
         );
       }
     }
 
-    const registeredCommands = await this.registerCommands(commands, guildId);
-
-    for (let i = 0; i < registeredCommands.length; i++) {
-      const registeredCommand = registeredCommands[i];
-
-      this.commands.set(registeredCommand.id, registeredCommand);
-    }
+    const createdCommands = await this.registerCommands(commands, guildId);
 
     this.log(
       "Registered %d slash commands %o",
-      registeredCommands.length,
-      registeredCommands.map((c) => c.name)
+      createdCommands.length,
+      createdCommands.map((c) => c.name)
     );
+
+    return createdCommands;
   }
 
-  public async deleteSlashCommand(
+  public async deleteSlashCommands(
     names: Array<string> | string,
     guildId?: string
   ) {
     if (!Array.isArray(names)) {
       names = [names];
+    }
+
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for deleteSlashCommands", guildId);
     }
 
     const commandsId = new Array<string>();
@@ -195,31 +227,30 @@ class CommandManager extends Base {
       commandsId.push(commandId);
     }
 
-    const commands = await this.deleteCommands(commandsId);
+    await this.deleteCommands(commandsId);
 
-    for (let i = 0; i < commands.length; i++) {
-      this.commands.delete(commands[i].id);
-    }
-
-    this.log(
-      "Deleted %d slash commands: %o",
-      commands.length,
-      commands.map((c) => c.name)
-    );
+    this.log("Deleted %d slash commands: %o", names.length, names);
   }
 
-  public async updateSlashCommand(
-    commands: Array<SlashCommandBuilder>,
+  public async updateSlashCommands(
+    commands: Array<SlashCommandBuilder> | SlashCommandBuilder,
     guildId?: string
   ) {
     if (!Array.isArray(commands)) {
       commands = [commands];
     }
 
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for updateSlashCommands", guildId);
+    }
+
     for (let i = 0; i < commands.length; i++) {
       const { name } = commands[i];
 
-      if (!this.hasSlashCommand(name, guildId)) {
+      if (!(await this.hasSlashCommand(name, guildId))) {
         throw new Error(
           `The slash command ${name} is not registered, did you mean addSlashCommand()?`
         );
@@ -228,32 +259,55 @@ class CommandManager extends Base {
 
     const updatedCommands = await this.updateCommands(commands, guildId);
 
-    for (let i = 0; i < updatedCommands.length; i++) {
-      const updatedCommand = updatedCommands[i];
-
-      this.commands.set(updatedCommand.id, updatedCommand);
-    }
-
     this.log(
       "Updated %d slash commands: %o",
       updatedCommands.length,
       updatedCommands.map((c) => c.name)
     );
+
+    return updatedCommands;
   }
 
-  public hasUserCommand(name: string, guildId?: string) {
-    const found = this.commands.findKey(
+  public async getUserCommand(name: string, guildId?: string) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for getUserCommand", guildId);
+    }
+
+    const userCommand = this.commands.findKey(
       (c) =>
         c.type === ApplicationCommandType.USER &&
         c.name === name &&
         c.guildId === guildId
     );
 
-    return typeof found !== "undefined";
+    return userCommand;
+  }
+
+  public async hasUserCommand(name: string, guildId?: string) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for hasUserCommand", guildId);
+    }
+
+    const userCommand = await this.getUserCommand(name, guildId);
+
+    return typeof userCommand !== "undefined";
   }
 
   public async addUserCommand(name: string, guildId?: string) {
-    if (this.hasUserCommand(name, guildId)) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for addUserCommand", guildId);
+    }
+
+    if (await this.hasUserCommand(name, guildId)) {
       throw new Error(`The user command ${name} is already registered.`);
     }
 
@@ -262,25 +316,22 @@ class CommandManager extends Base {
       name,
     };
 
-    const registeredCommands = await this.registerCommands(
-      [userCommand],
-      guildId
-    );
+    const userCommands = await this.registerCommands([userCommand], guildId);
 
-    for (let i = 0; i < registeredCommands.length; i++) {
-      const registeredCommand = registeredCommands[i];
+    this.log('Registered "%s" user command', userCommand);
 
-      this.commands.set(registeredCommand.id, registeredCommand);
-    }
-
-    this.log(
-      "Registered %d user commands %o",
-      registeredCommands.length,
-      registeredCommands.map((c) => c.name)
-    );
+    // eslint-disable-next-line no-magic-numbers
+    return userCommands[0];
   }
 
   public async deleteUserCommand(name: string, guildId?: string) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for deleteUserCommand", guildId);
+    }
+
     const commandId = this.commands.findKey(
       (c) =>
         c.type === ApplicationCommandType.USER &&
@@ -292,32 +343,51 @@ class CommandManager extends Base {
       throw new Error(`The user command ${name} is not registered.`);
     }
 
-    const command = await this.deleteCommands([commandId]);
+    await this.deleteCommands([commandId]);
 
-    for (let i = 0; i < command.length; i++) {
-      this.commands.delete(command[i].id);
-    }
-
-    this.log(
-      "Deleted %d user commands: %o",
-      command.length,
-      command.map((c) => c.name)
-    );
+    this.log('Deleted "%s" user command', name);
   }
 
-  public hasMessageCommand(name: string, guildId?: string) {
-    const found = this.commands.findKey(
+  public async getMessageCommand(name: string, guildId?: string) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for getMessageCommand", guildId);
+    }
+
+    const messageCommand = this.commands.findKey(
       (c) =>
         c.type === ApplicationCommandType.MESSAGE &&
         c.name === name &&
         c.guildId === guildId
     );
 
-    return typeof found !== "undefined";
+    return messageCommand;
+  }
+
+  public async hasMessageCommand(name: string, guildId?: string) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for hasMessageCommand", guildId);
+    }
+
+    const messageCommand = await this.getMessageCommand(name, guildId);
+
+    return typeof messageCommand !== "undefined";
   }
 
   public async addMessageCommand(name: string, guildId?: string) {
-    if (this.hasMessageCommand(name, guildId)) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for addMessageCommand", guildId);
+    }
+
+    if (await this.hasMessageCommand(name, guildId)) {
       throw new Error(`The message command ${name} is already registered.`);
     }
 
@@ -326,25 +396,25 @@ class CommandManager extends Base {
       name,
     };
 
-    const registeredCommands = await this.registerCommands(
+    const messageCommands = await this.registerCommands(
       [messageCommand],
       guildId
     );
 
-    for (let i = 0; i < registeredCommands.length; i++) {
-      const registeredCommand = registeredCommands[i];
+    this.log('Registered "%s" message command', name);
 
-      this.commands.set(registeredCommand.id, registeredCommand);
-    }
-
-    this.log(
-      "Registered %d message commands %o",
-      registeredCommands.length,
-      registeredCommands.map((c) => c.name)
-    );
+    // eslint-disable-next-line no-magic-numbers
+    return messageCommands[0];
   }
 
   public async deleteMessageCommand(name: string, guildId?: string) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for deleteMessageCommand", guildId);
+    }
+
     const commandId = this.commands.findKey(
       (c) =>
         c.type === ApplicationCommandType.MESSAGE &&
@@ -356,20 +426,19 @@ class CommandManager extends Base {
       throw new Error(`The message command ${name} is not registered.`);
     }
 
-    const command = await this.deleteCommands([commandId]);
+    await this.deleteCommands([commandId]);
 
-    for (let i = 0; i < command.length; i++) {
-      this.commands.delete(command[i].id);
-    }
-
-    this.log(
-      "Deleted %d message commands: %o",
-      command.length,
-      command.map((c) => c.name)
-    );
+    this.log('Deleted "%s" message command', name);
   }
 
   public async deleteAllCommands(guildId?: string) {
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for deleteAllCommands", guildId);
+    }
+
     const route =
       typeof guildId === "undefined"
         ? Routes.applicationCommands(this.appId)
@@ -524,10 +593,19 @@ class CommandManager extends Base {
     }
   }
 
-  private async firstGuildId() {
-    const guilds = await this.client.discord.guilds.fetch();
+  private async developmentGuildId(): Promise<string> {
+    if (!this.developmentGuild) {
+      const guilds = await this.client.discord.guilds.fetch({ limit: 1 });
+      const firstKey = guilds.firstKey();
 
-    return guilds.firstKey();
+      if (!firstKey) {
+        throw new Error("Bot has not joined any guilds.");
+      }
+
+      this.developmentGuild = firstKey;
+    }
+
+    return this.developmentGuild;
   }
 
   private async registerCommands(
@@ -536,10 +614,11 @@ class CommandManager extends Base {
   ): Promise<Array<ApplicationCommand>> {
     const commands = Array.isArray(command) ? command : [command];
 
-    if (this.client.helper.isDevelopment) {
-      guildId = await this.firstGuildId();
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
 
-      this.log("Forcing guildId %d for command creation", guildId);
+      this.log("Forcing guildId %d for registerCommands", guildId);
     }
 
     const route =
@@ -554,20 +633,17 @@ class CommandManager extends Base {
         body: commands[i],
       });
 
-      createdCommands.push(
-        this.constructor.parseRawApplicationCommand(createdCommand)
-      );
+      const cmd = this.constructor.parseRawApplicationCommand(createdCommand);
+
+      this.commands.set(cmd.id, cmd);
+      createdCommands.push(cmd);
     }
 
     return createdCommands;
   }
 
-  private async deleteCommands(
-    commandId: Array<string>
-  ): Promise<Array<ApplicationCommand>> {
+  private async deleteCommands(commandId: Array<string>): Promise<void> {
     const commandIds = Array.isArray(commandId) ? commandId : [commandId];
-
-    const deletedCommands = new Array<ApplicationCommand>();
 
     for (let i = 0; i < commandIds.length; i++) {
       const commandId = commandIds[i];
@@ -586,19 +662,22 @@ class CommandManager extends Base {
 
       await this.rest.delete(route);
 
-      deletedCommands.push(command);
+      this.commands.delete(command.id);
     }
-
-    return deletedCommands;
   }
 
   private async updateCommands(
     command: Array<SlashCommandBuilder | UserCommand | MessageCommand>,
     guildId?: string
   ): Promise<Array<ApplicationCommand>> {
-    const updatedCommands = await this.registerCommands(command, guildId);
+    if (!guildId && this.client.helper.isDevelopment) {
+      // eslint-disable-next-line require-atomic-updates
+      guildId = await this.developmentGuildId();
 
-    return updatedCommands;
+      this.log("Forcing guildId %d for updateCommands", guildId);
+    }
+
+    return this.registerCommands(command, guildId);
   }
 
   private async editCommandPermissions(
