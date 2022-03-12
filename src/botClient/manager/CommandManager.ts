@@ -22,12 +22,14 @@ class CommandManager extends Base {
   private static parseRawApplicationCommand(
     rawCommand: unknown
   ): ApplicationCommand {
-    if (rawCommand !== null && typeof rawCommand !== "object") {
+    if (typeof rawCommand !== "object") {
       throw new Error("ApplicationCommand must be a object.");
+    } else if (rawCommand === null) {
+      throw new Error("ApplicationCommand cannot be null.");
     }
 
     const expectedKeys = ["id", "type", "application_id", "name", "version"];
-    const keys = Object.keys(rawCommand as object);
+    const keys = Object.keys(rawCommand);
 
     for (let i = 0; i < expectedKeys.length; i++) {
       const expectedKey = expectedKeys[i];
