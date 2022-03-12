@@ -1,6 +1,8 @@
 import {
   ApplicationCommand,
   ApplicationCommandType,
+  CommandPermission,
+  GuildCommandPermission,
   MessageCommand,
   UserCommand,
 } from "../types";
@@ -14,6 +16,9 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 const restVersion = "10";
 
 class CommandManager extends Base {
+  // eslint-disable-next-line no-magic-numbers
+  private static readonly maxCommandPermissions = 10;
+
   private static parseRawApplicationCommand(
     rawCommand: unknown
   ): ApplicationCommand {
@@ -50,12 +55,46 @@ class CommandManager extends Base {
     return command;
   }
 
+  private static parseRawApplicationGuildCommandPermission(
+    rawGuildCommandPermission: unknown
+  ): GuildCommandPermission {
+    if (typeof rawGuildCommandPermission !== "object") {
+      throw new Error("GuildCommandPermission must be a object.");
+    } else if (rawGuildCommandPermission === null) {
+      throw new Error("ApplicationCommand cannot be null.");
+    }
+
+    const expectedKeys = ["id", "application_id", "guild_id", "permissions"];
+    const keys = Object.keys(rawGuildCommandPermission);
+
+    for (let i = 0; i < expectedKeys.length; i++) {
+      const expectedKey = expectedKeys[i];
+
+      if (!keys.includes(expectedKey)) {
+        throw new Error(`GuildCommandPermission is missing ${expectedKey}.`);
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawApplicationCommand = rawGuildCommandPermission as any;
+
+    const guildCommandPermission: GuildCommandPermission = {
+      id: rawApplicationCommand.id,
+      applicationId: rawApplicationCommand.application_id,
+      guildId: rawApplicationCommand.guild_id,
+      permissions: rawApplicationCommand.permissions,
+    };
+
+    return guildCommandPermission;
+  }
+
   // eslint-disable-next-line no-use-before-define
   public ["constructor"]: typeof CommandManager;
 
   private _appId = "";
   private rest = new REST({ version: restVersion });
   private commands = new Collection<string, ApplicationCommand>();
+  private commandPermissions = new Collection<string, GuildCommandPermission>();
 
   private get appId() {
     if (!this._appId) {
@@ -355,6 +394,65 @@ class CommandManager extends Base {
     );
   }
 
+  public getCommandPermissions(guildId: string, commandId: string) {
+    return this.commandPermissions.find(
+      (p) => p.guildId === guildId && p.id === commandId
+    );
+  }
+
+  public async addCommandPermissions(
+    guildId: string,
+    commandId: string,
+    permissions: Array<CommandPermission> | CommandPermission
+  ) {
+    if (!Array.isArray(permissions)) {
+      permissions = [permissions];
+    }
+
+    const basePermission = this.commandPermissions.find(
+      (p) => p.id === commandId && p.guildId === guildId
+    );
+
+    if (basePermission) {
+      permissions = [...basePermission.permissions, ...permissions];
+    }
+
+    await this.updateCommandPermissions(guildId, commandId, permissions);
+  }
+
+  public async deleteCommandPermissions(guildId: string, commandId: string) {
+    await this.editCommandPermissions(guildId, commandId, []);
+  }
+
+  public async updateCommandPermissions(
+    guildId: string,
+    commandId: string,
+    permissions: Array<CommandPermission> | CommandPermission
+  ) {
+    if (!Array.isArray(permissions)) {
+      permissions = [permissions];
+    }
+
+    await this.editCommandPermissions(guildId, commandId, permissions);
+  }
+
+  public async deleteAllGuildCommandPermissions(guildId: string) {
+    const route = Routes.guildApplicationCommandsPermissions(
+      this.appId,
+      guildId
+    );
+
+    await this.rest.put(route, {
+      body: [],
+    });
+
+    this.commandPermissions.forEach((c, k) => {
+      if (c.guildId === guildId) {
+        this.commandPermissions.delete(k);
+      }
+    });
+  }
+
   private async fetchAllCommands() {
     await this.fetchApplicationCommands();
 
@@ -400,6 +498,26 @@ class CommandManager extends Base {
         );
 
         this.commands.set(command.id, command);
+      }
+    }
+  }
+
+  private async fetchGuildCommandPermissions(guildId: string) {
+    const route = Routes.guildApplicationCommandsPermissions(
+      this.appId,
+      guildId
+    );
+
+    const rawPermissions = await this.rest.get(route);
+
+    if (Array.isArray(rawPermissions)) {
+      for (let i = 0; i < rawPermissions.length; i++) {
+        const rawPermission =
+          this.constructor.parseRawApplicationGuildCommandPermission(
+            rawPermissions[i]
+          );
+
+        this.commandPermissions.set(rawPermission.id, rawPermission);
       }
     }
   }
@@ -479,6 +597,47 @@ class CommandManager extends Base {
     const updatedCommands = await this.registerCommands(command, guildId);
 
     return updatedCommands;
+  }
+
+  private async editCommandPermissions(
+    guildId: string,
+    commandId: string,
+    permissions: Array<CommandPermission>
+  ): Promise<GuildCommandPermission> {
+    if (permissions.length > this.constructor.maxCommandPermissions) {
+      throw new Error(
+        `A command can only have up to ${this.constructor.maxCommandPermissions} guild permission overwrites.`
+      );
+    }
+
+    if (!guildId && this.client.helper.isDevelopment) {
+      guildId = await this.developmentGuildId();
+
+      this.log("Forcing guildId %d for command permission", guildId);
+    }
+
+    const route = Routes.applicationCommandPermissions(
+      this.appId,
+      guildId,
+      commandId
+    );
+
+    const updatedPermissions = await this.rest.put(route, {
+      body: { permissions },
+    });
+
+    const createdPermission =
+      this.constructor.parseRawApplicationGuildCommandPermission(
+        updatedPermissions
+      );
+
+    if (permissions.length) {
+      this.commandPermissions.set(createdPermission.id, createdPermission);
+    } else {
+      this.commandPermissions.delete(commandId);
+    }
+
+    return createdPermission;
   }
 }
 
