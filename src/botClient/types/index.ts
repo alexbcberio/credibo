@@ -6,4 +6,5 @@ export * from "./MessageCommand";
 export * from "./Module";
 export * from "./PermissionType";
 export * from "./Plugin";
+export * from "./Plugins";
 export * from "./UserCommand";

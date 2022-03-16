@@ -1,6 +1,7 @@
+import { Plugin, Plugins } from "../types";
+
 import { Base } from "../Base";
 import { Collection } from "discord.js";
-import { Plugin } from "../types";
 
 class PluginManager extends Base {
   private plugins = new Collection<string, Plugin>();
@@ -22,8 +23,9 @@ class PluginManager extends Base {
     this.log("Added %s plugin", name);
   }
 
+  public getPlugin<P extends keyof Plugins>(plugin: P): Plugins[P];
 
-  public getPlugin(name: string) {
+  public getPlugin<P extends string>(name: Exclude<P, keyof Plugins>) {
     const plugin = this.plugins.get(name);
 
     if (!plugin) {
