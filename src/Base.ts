@@ -1,12 +1,12 @@
-import { BotClient } from ".";
+import { Credibo } from ".";
 import { Debugger } from "debug";
 import { EventEmitter } from "stream";
 
 abstract class Base extends EventEmitter {
-  public readonly client: BotClient;
+  public readonly client: Credibo;
   protected readonly log: Debugger;
 
-  constructor(client: BotClient) {
+  constructor(client: Credibo) {
     super();
 
     this.client = client;

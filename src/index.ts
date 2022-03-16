@@ -9,8 +9,8 @@ import {
 } from "./manager";
 import debug, { Debugger } from "debug";
 
-class BotClient {
-  public static createInstance(options: ClientOptions): BotClient {
+class Credibo {
+  public static createInstance(options: ClientOptions): Credibo {
     return new this(options);
   }
 
@@ -48,4 +48,4 @@ class BotClient {
   }
 }
 
-export { BotClient };
+export { Credibo };

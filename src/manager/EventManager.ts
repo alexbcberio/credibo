@@ -1,7 +1,7 @@
 import { ClientEvents, Collection } from "discord.js";
 
 import { Base } from "../Base";
-import { BotClient } from "..";
+import { Credibo } from "..";
 
 type ClientEventTypes = keyof ClientEvents;
 type Listener = (...args: Array<unknown>) => void;
@@ -16,7 +16,7 @@ class EventManager extends Base {
   // heavily copy pasted from discord.js
   public on<K extends ClientEventTypes>(
     event: K,
-    listener: (this: BotClient, ...args: ClientEvents[K]) => void
+    listener: (this: Credibo, ...args: ClientEvents[K]) => void
   ): this;
 
   // heavily copy pasted from discord.js
@@ -73,7 +73,7 @@ class EventManager extends Base {
   // heavily copy pasted from discord.js
   public pre<K extends ClientEventTypes>(
     event: K,
-    listener: (this: BotClient, ...args: ClientEvents[K]) => void
+    listener: (this: Credibo, ...args: ClientEvents[K]) => void
   ): this;
 
   // heavily copy pasted from discord.js
@@ -98,7 +98,7 @@ class EventManager extends Base {
   // heavily copy pasted from discord.js
   public post<K extends ClientEventTypes>(
     event: K,
-    listener: (this: BotClient, ...args: ClientEvents[K]) => void
+    listener: (this: Credibo, ...args: ClientEvents[K]) => void
   ): this;
 
   // heavily copy pasted from discord.js
