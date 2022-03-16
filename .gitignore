@@ -48,8 +48,5 @@ jspm_packages/
 .yarn/install-state.gz
 .pnp.*
 
-# compiled resources
-dist
-
 # miscelaneous
 TODO.md
