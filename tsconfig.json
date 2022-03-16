@@ -5,6 +5,7 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "sourceMap": true,
+    "declaration": true,
 
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
