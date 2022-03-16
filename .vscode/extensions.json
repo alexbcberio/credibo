@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "rvest.vs-code-prettier-eslint",
+    "dbaeumer.vscode-eslint",
+    "vivaxy.vscode-conventional-commits",
+    "amatiasq.sort-imports",
+    "Gruntfuggly.todo-tree"
+  ],
+  "unwantedRecommendations": []
+}

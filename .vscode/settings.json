@@ -1,0 +1,10 @@
+{
+  "conventionalCommits.scopes": [
+    "CommandManager",
+    "EventManager",
+    "ModuleManager",
+    "PluginManager",
+    "Types",
+    "Helper"
+  ]
+}
