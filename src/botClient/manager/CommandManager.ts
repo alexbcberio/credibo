@@ -318,7 +318,7 @@ class CommandManager extends Base {
 
     const userCommands = await this.registerCommands([userCommand], guildId);
 
-    this.log('Registered "%s" user command', userCommand);
+    this.log('Registered "%s" user command', userCommand.name);
 
     // eslint-disable-next-line no-magic-numbers
     return userCommands[0];
