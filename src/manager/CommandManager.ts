@@ -130,8 +130,7 @@ class CommandManager extends Base {
       this.log("Forcing guildId %d for getSlashCommand", guildId);
     }
 
-    const name =
-      command instanceof SlashCommandBuilder ? command.name : command;
+    const name = typeof command === "string" ? command : command.name;
 
     return this.commands.find(
       (c) =>
