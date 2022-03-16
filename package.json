@@ -1,9 +1,23 @@
 {
-  "name": "discord-bot-template",
+  "name": "credibo",
   "version": "0.0.1",
   "author": "alexbcberio <alexbcberio@gmail.com>",
-  "license": "MIT",
-  "private": true,
+  "license": "MPL-2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbcberio/credibo.git"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "framework"
+  ],
+  "homepage": "https://github.com/alexbcberio/credibo",
+  "bugs": {
+    "url": "https://github.com/alexbcberio/credibo/issues/new/choose"
+  },
   "scripts": {
     "start": "cross-env NODE_ENV=production node -r dotenv/config dist/index.js",
     "watch": "tsc && concurrently -r true \"yarn build:dev\" \"yarn start:dev\"",
