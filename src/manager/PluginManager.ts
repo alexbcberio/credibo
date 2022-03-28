@@ -1,7 +1,6 @@
-import { Plugin, Plugins } from "../types";
-
 import { Base } from "../Base";
 import { Collection } from "discord.js";
+import { Plugin } from "../types";
 
 class PluginManager extends Base {
   private plugins = new Collection<string, Plugin>();
@@ -15,24 +14,26 @@ class PluginManager extends Base {
 
     if (this.hasPlugin(name)) {
       throw new Error(`Plugin ${name} is already registered.`);
+    } else if (Object.keys(this).includes(name)) {
+      throw new Error(
+        `Plugin ${name} could not be added, the name is reserved for internal use.`
+      );
     }
 
     await plugin.initialize();
 
     this.plugins.set(name, plugin);
+
+    Object.defineProperty(this, name, {
+      get() {
+        return plugin;
+      },
+      set() {
+        throw new Error(`A plugin cannot be overwritten.`);
+      },
+    });
+
     this.log("Added %s plugin", name);
-  }
-
-  public getPlugin<P extends keyof Plugins>(plugin: P): Plugins[P];
-
-  public getPlugin<P extends string>(name: Exclude<P, keyof Plugins>) {
-    const plugin = this.plugins.get(name);
-
-    if (!plugin) {
-      throw new Error(`Plugin ${name} is not registered.`);
-    }
-
-    return plugin;
   }
 }
 
