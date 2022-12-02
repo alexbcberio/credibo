@@ -16,6 +16,7 @@ class ModuleManager extends Base {
     return directoriesPath;
   }
 
+  // @ts-expect-error defined to get typings
   // eslint-disable-next-line no-use-before-define
   public ["constructor"]: typeof ModuleManager;
 

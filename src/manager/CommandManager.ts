@@ -6,10 +6,9 @@ import {
   MessageCommand,
   UserCommand,
 } from "../types";
+import { Collection, REST } from "discord.js";
 
 import { Base } from "../Base";
-import { Collection } from "discord.js";
-import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
 import { SlashCommandBuilder } from "@discordjs/builders";
 
@@ -90,6 +89,7 @@ class CommandManager extends Base {
     return guildCommandPermission;
   }
 
+  // @ts-expect-error defined to get typings
   // eslint-disable-next-line no-use-before-define
   public ["constructor"]: typeof CommandManager;
 

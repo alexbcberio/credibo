@@ -6,6 +6,7 @@
     "moduleResolution": "Node",
     "sourceMap": true,
     "declaration": true,
+    "esModuleInterop": true,
 
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
